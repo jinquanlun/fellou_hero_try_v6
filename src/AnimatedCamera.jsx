@@ -43,34 +43,92 @@ function AnimatedCamera({
       // 从动画提取器获取相机变换数据
       const cameraTransform = animationExtractor.getCameraTransformAtTime(currentTime)
       
+      // 计算结尾调整（最后1.5秒开始调整视角让圆环居中）
+      const totalDuration = animationExtractor.getDuration()
+      const adjustDuration = 1.5 // 延长过渡时间
+      const endAdjustStartTime = totalDuration - adjustDuration
+      const isInEndAdjustment = currentTime >= endAdjustStartTime
+      
+      // 平滑调整因子 (0 到 1)
+      const adjustFactor = isInEndAdjustment 
+        ? Math.min(1, (currentTime - endAdjustStartTime) / adjustDuration)
+        : 0
+      
+      // 更高级的缓动函数 - easeInOutCubic (更丝滑)
+      const easeInOutCubic = (t) => {
+        return t < 0.5 
+          ? 4 * t * t * t 
+          : 1 - Math.pow(-2 * t + 2, 3) / 2
+      }
+      
+      const smoothFactor = easeInOutCubic(adjustFactor)
+      
       if (cameraTransform) {
         // 更新相机位置
         if (cameraTransform.position) {
-          cameraRef.current.position.set(
-            cameraTransform.position.x,
-            cameraTransform.position.y,
-            cameraTransform.position.z
-          )
+          let x = cameraTransform.position.x
+          let y = cameraTransform.position.y
+          let z = cameraTransform.position.z
+          
+          // 结尾调整：微调相机位置让构图更居中
+          if (isInEndAdjustment) {
+            // 分阶段调整：位置调整在前70%时间内完成，更柔和
+            const positionFactor = Math.min(1, adjustFactor / 0.7)
+            const positionSmooth = easeInOutCubic(positionFactor)
+            
+            x += 1.5 * positionSmooth  // 稍微减小调整幅度，更自然
+            y += -0.7 * positionSmooth // 稍微减小调整幅度
+            
+            if (adjustFactor < 0.1) { // 只在开始时打印，避免过多日志
+              console.log(`📹 Camera位置调整开始: 持续时间${adjustDuration}s`)
+            }
+          }
+          
+          cameraRef.current.position.set(x, y, z)
         }
 
         // 更新相机旋转
         if (cameraTransform.rotation) {
           if (cameraTransform.rotation.w !== undefined) {
             // 四元数旋转
-            const quat = new THREE.Quaternion(
+            let quat = new THREE.Quaternion(
               cameraTransform.rotation.x,
               cameraTransform.rotation.y,
               cameraTransform.rotation.z,
               cameraTransform.rotation.w
             )
+            
+            // 结尾调整：微调相机角度指向圆环中心
+            if (isInEndAdjustment) {
+              // 分阶段调整：角度调整从30%开始，在后70%时间内完成
+              const rotationFactor = adjustFactor > 0.3 ? (adjustFactor - 0.3) / 0.7 : 0
+              const rotationSmooth = easeInOutCubic(rotationFactor)
+              
+              // 创建向左看的额外旋转，减小幅度更自然
+              const adjustRotation = new THREE.Quaternion()
+              adjustRotation.setFromEuler(new THREE.Euler(0, -0.15 * rotationSmooth, 0)) // 减小角度调整
+              
+              // 应用额外旋转
+              quat.multiply(adjustRotation)
+            }
+            
             cameraRef.current.setRotationFromQuaternion(quat)
           } else {
             // 欧拉角旋转
-            cameraRef.current.rotation.set(
-              cameraTransform.rotation.x,
-              cameraTransform.rotation.y,
-              cameraTransform.rotation.z
-            )
+            let rotX = cameraTransform.rotation.x
+            let rotY = cameraTransform.rotation.y
+            let rotZ = cameraTransform.rotation.z
+            
+            // 结尾调整：微调相机角度
+            if (isInEndAdjustment) {
+              // 分阶段调整：角度调整从30%开始
+              const rotationFactor = adjustFactor > 0.3 ? (adjustFactor - 0.3) / 0.7 : 0
+              const rotationSmooth = easeInOutCubic(rotationFactor)
+              
+              rotY += -0.15 * rotationSmooth // 减小角度调整，向左转
+            }
+            
+            cameraRef.current.rotation.set(rotX, rotY, rotZ)
           }
         }
 

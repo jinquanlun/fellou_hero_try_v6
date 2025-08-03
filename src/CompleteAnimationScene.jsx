@@ -167,11 +167,37 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
     try {
       // 获取所有环的变换数据
       const transforms = animationExtractor.getAllTransformsAtTime(currentTime)
+      
+      // 计算动画结尾调整（最后1.5秒开始调整，与相机同步）
+      const totalDuration = animationExtractor.getDuration()
+      const adjustDuration = 1.5 // 与相机调整时间同步
+      const endAdjustStartTime = totalDuration - adjustDuration
+      const isInEndAdjustment = currentTime >= endAdjustStartTime
+      
+      // 平滑调整因子 (0 到 1)
+      const adjustFactor = isInEndAdjustment 
+        ? Math.min(1, (currentTime - endAdjustStartTime) / adjustDuration)
+        : 0
+      
+      // 使用与相机相同的高级缓动函数
+      const easeInOutCubic = (t) => {
+        return t < 0.5 
+          ? 4 * t * t * t 
+          : 1 - Math.pow(-2 * t + 2, 3) / 2
+      }
+      
+      const smoothFactor = easeInOutCubic(adjustFactor)
+      
+      // 调试信息
+      if (isInEndAdjustment && adjustFactor > 0) {
+        console.log(`🎯 End Adjustment: time=${currentTime.toFixed(2)}, factor=${adjustFactor.toFixed(2)}, smooth=${smoothFactor.toFixed(2)}`)
+      }
 
       // 更新Ring 1 - Scenes_B_00100
       if (ring1Ref.current && transforms.rings.ring1) {
         const t = transforms.rings.ring1
         if (t.position) {
+          // 保持原始位置，不做任何调整
           ring1Ref.current.position.set(t.position.x, t.position.y, t.position.z)
         }
         if (t.rotation) {
@@ -183,7 +209,18 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
           }
         }
         if (t.scale) {
-          ring1Ref.current.scale.set(t.scale.x, t.scale.y, t.scale.z)
+          // 结尾调整：显著放大
+          const scaleMultiplier = 1 + smoothFactor * 0.5 // 增加50%（大幅增强）
+          
+          if (isInEndAdjustment) {
+            console.log(`Ring1 缩放: 原始scale=${t.scale.x.toFixed(3)}, 倍数=${scaleMultiplier.toFixed(2)}`)
+          }
+          
+          ring1Ref.current.scale.set(
+            t.scale.x * scaleMultiplier, 
+            t.scale.y * scaleMultiplier, 
+            t.scale.z * scaleMultiplier
+          )
         }
       }
 
@@ -191,6 +228,7 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
       if (ring2Ref.current && transforms.rings.ring2) {
         const t = transforms.rings.ring2
         if (t.position) {
+          // 保持原始位置，不做任何调整
           ring2Ref.current.position.set(t.position.x, t.position.y, t.position.z)
         }
         if (t.rotation) {
@@ -202,7 +240,14 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
           }
         }
         if (t.scale) {
-          ring2Ref.current.scale.set(t.scale.x, t.scale.y, t.scale.z)
+          // 结尾调整：显著放大
+          const scaleMultiplier = 1 + smoothFactor * 0.5 // 增加50%（大幅增强）
+          
+          ring2Ref.current.scale.set(
+            t.scale.x * scaleMultiplier, 
+            t.scale.y * scaleMultiplier, 
+            t.scale.z * scaleMultiplier
+          )
         }
       }
 
@@ -210,6 +255,7 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
       if (ring3Ref.current && transforms.rings.ring3) {
         const t = transforms.rings.ring3
         if (t.position) {
+          // 保持原始位置，不做任何调整
           ring3Ref.current.position.set(t.position.x, t.position.y, t.position.z)
         }
         if (t.rotation) {
@@ -221,7 +267,14 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
           }
         }
         if (t.scale) {
-          ring3Ref.current.scale.set(t.scale.x, t.scale.y, t.scale.z)
+          // 结尾调整：显著放大
+          const scaleMultiplier = 1 + smoothFactor * 0.5 // 增加50%（大幅增强）
+          
+          ring3Ref.current.scale.set(
+            t.scale.x * scaleMultiplier, 
+            t.scale.y * scaleMultiplier, 
+            t.scale.z * scaleMultiplier
+          )
         }
       }
 
