@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } f
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import AnimatedCamera from './AnimatedCamera.jsx'
-import { multiSourceAnimationExtractor } from './MultiSourceAnimationExtractor.js'
+import { multiSourceAnimationExtractor } from '../systems/MultiSourceAnimationExtractor.js'
 import * as THREE from 'three'
 
 /**
@@ -188,10 +188,6 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
       
       const smoothFactor = easeInOutCubic(adjustFactor)
       
-      // 调试信息
-      if (isInEndAdjustment && adjustFactor > 0) {
-        console.log(`🎯 End Adjustment: time=${currentTime.toFixed(2)}, factor=${adjustFactor.toFixed(2)}, smooth=${smoothFactor.toFixed(2)}`)
-      }
 
       // 更新Ring 1 - Scenes_B_00100
       if (ring1Ref.current && transforms.rings.ring1) {

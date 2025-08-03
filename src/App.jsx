@@ -1,8 +1,8 @@
 import React, { Suspense, useState, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
-import CompleteAnimationScene from './CompleteAnimationScene.jsx'
-import AnimationControls from './AnimationControls.jsx'
+import CompleteAnimationScene from './components/CompleteAnimationScene.jsx'
+import AnimationControls from './components/AnimationControls.jsx'
 
 /**
  * 主应用组件 - 完整动画场景版本

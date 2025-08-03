@@ -79,9 +79,6 @@ function AnimatedCamera({
             x += 1.5 * positionSmooth  // 稍微减小调整幅度，更自然
             y += -0.7 * positionSmooth // 稍微减小调整幅度
             
-            if (adjustFactor < 0.1) { // 只在开始时打印，避免过多日志
-              console.log(`📹 Camera位置调整开始: 持续时间${adjustDuration}s`)
-            }
           }
           
           cameraRef.current.position.set(x, y, z)
