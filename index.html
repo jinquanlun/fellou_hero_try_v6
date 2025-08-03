@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Particle Animation System - Scenes B to v6 Rings</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+    
+    .loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #00ff00;
+      font-size: 18px;
+      text-align: center;
+      z-index: 1000;
+    }
+    
+    .animation-controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #00ff00;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #00ff00;
+      font-family: monospace;
+      font-size: 12px;
+      min-width: 200px;
+      z-index: 100;
+    }
+    
+    .animation-controls h3 {
+      margin: 0 0 15px 0;
+      color: #00ffff;
+      text-align: center;
+    }
+    
+    .control-row {
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .control-row button {
+      background: #003300;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    
+    .control-row button:hover {
+      background: #004400;
+    }
+    
+    .control-row button:disabled {
+      background: #222;
+      color: #666;
+      cursor: not-allowed;
+    }
+    
+    .progress-slider, .speed-slider {
+      flex: 1;
+      height: 4px;
+      background: #333;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    .progress-slider::-webkit-slider-thumb,
+    .speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #00ff00;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    .performance-monitor {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #00ff00;
+      font-family: monospace;
+      font-size: 12px;
+      min-width: 200px;
+      z-index: 100;
+    }
+    
+    .debug-info {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #ffff00;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ffff00;
+      font-family: monospace;
+      font-size: 10px;
+      max-width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading">
+      <div>🚀 Loading Particle Animation System...</div>
+      <div style="margin-top: 10px; font-size: 14px;">
+        Initializing Scenes B to v6 mapping...
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
