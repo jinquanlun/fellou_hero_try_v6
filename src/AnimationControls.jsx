@@ -6,12 +6,13 @@ import React from 'react'
 function AnimationControls({ 
   onPlay, 
   onStop, 
+  onPause,
   isPlaying, 
   currentTime, 
   animationInfo,
   position = [20, 20] 
 }) {
-  const totalDuration = animationInfo?.[0]?.duration || 0
+  const totalDuration = animationInfo?.totalDuration || 0
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0
 
   return (
@@ -51,6 +52,23 @@ function AnimationControls({
           }}
         >
           ▶️ Play
+        </button>
+        
+        <button 
+          onClick={onPause}
+          disabled={!isPlaying}
+          style={{
+            background: !isPlaying ? '#333' : '#333300',
+            border: '1px solid #ffff00',
+            color: !isPlaying ? '#666' : '#ffff00',
+            padding: '8px 16px',
+            marginRight: '10px',
+            borderRadius: '4px',
+            cursor: !isPlaying ? 'not-allowed' : 'pointer',
+            fontFamily: 'monospace'
+          }}
+        >
+          ⏸️ Pause
         </button>
         
         <button 
@@ -96,36 +114,62 @@ function AnimationControls({
       {animationInfo && (
         <div>
           <h4 style={{ margin: '0 0 10px 0', color: '#ffff00' }}>
-            📊 Animation Info
+            📊 Multi-Source Animation Info
           </h4>
-          {animationInfo.map((anim, index) => (
-            <div key={index} style={{ marginBottom: '10px' }}>
+          
+          {/* 相机动画信息 */}
+          {animationInfo.camera && (
+            <div style={{ marginBottom: '12px' }}>
               <div style={{ color: '#00ffff' }}>
-                "{anim.name}" ({anim.duration.toFixed(2)}s)
+                📹 Camera: {animationInfo.camera.name}
               </div>
               <div style={{ fontSize: '10px', marginLeft: '10px' }}>
-                {anim.tracks.length} tracks
+                Duration: {animationInfo.camera.duration.toFixed(2)}s
               </div>
-              
-              {/* 显示环相关的轨道 */}
-              {anim.tracks
-                .filter(track => 
-                  track.objectName.includes('Scenes_B_') || 
-                  track.objectName.includes('00100')
-                )
-                .slice(0, 6) // 只显示前6个
-                .map((track, trackIndex) => (
-                  <div key={trackIndex} style={{ 
-                    fontSize: '9px', 
-                    marginLeft: '15px',
-                    color: '#cccccc'
-                  }}>
-                    📍 {track.objectName}.{track.propertyName} ({track.keyframes} keys)
-                  </div>
-                ))
-              }
+              <div style={{ fontSize: '10px', marginLeft: '10px' }}>
+                Tracks: {animationInfo.camera.tracks}
+              </div>
             </div>
-          ))}
+          )}
+          
+          {/* 环动画信息 */}
+          {animationInfo.rings && Array.isArray(animationInfo.rings) && animationInfo.rings.length > 0 && (
+            <div>
+              <div style={{ color: '#00ff88', marginBottom: '8px' }}>
+                🎯 Rings ({animationInfo.rings.length}/3):
+              </div>
+              {(animationInfo.rings || []).map((ring, index) => (
+                <div key={ring.id} style={{ 
+                  marginBottom: '8px',
+                  marginLeft: '10px',
+                  fontSize: '10px'
+                }}>
+                  <div style={{ color: ring.hasAnimation ? '#00ff00' : '#ff6600' }}>
+                    {ring.hasAnimation ? '✅' : '⚠️'} {ring.id}: {ring.name}
+                  </div>
+                  {ring.hasAnimation && (
+                    <>
+                      <div style={{ marginLeft: '10px' }}>
+                        Duration: {ring.duration.toFixed(2)}s
+                      </div>
+                      <div style={{ marginLeft: '10px' }}>
+                        Tracks: {ring.tracks}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div style={{ 
+            borderTop: '1px solid #333', 
+            paddingTop: '8px', 
+            marginTop: '12px',
+            fontSize: '10px'
+          }}>
+            Total Duration: {totalDuration.toFixed(2)}s
+          </div>
         </div>
       )}
 

@@ -1,42 +1,44 @@
 import React, { Suspense, useState, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment } from '@react-three/drei'
-import AnimationAnalyzer from './AnimationAnalyzer.jsx'
+import { Environment } from '@react-three/drei'
+import CompleteAnimationScene from './CompleteAnimationScene.jsx'
 import AnimationControls from './AnimationControls.jsx'
 
 /**
- * 主应用组件 - 简化测试版本
+ * 主应用组件 - 完整动画场景版本
  */
 function App() {
   const [animationInfo, setAnimationInfo] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const analyzerRef = useRef()
+  const [cameraState, setCameraState] = useState(null)
+  const sceneRef = useRef()
 
   const handlePlay = () => {
-    if (analyzerRef.current?.playAnimation) {
-      analyzerRef.current.playAnimation()
+    if (sceneRef.current?.playAnimation) {
+      sceneRef.current.playAnimation()
       setIsPlaying(true)
     }
   }
 
   const handleStop = () => {
-    if (analyzerRef.current?.stopAnimation) {
-      analyzerRef.current.stopAnimation()
+    if (sceneRef.current?.stopAnimation) {
+      sceneRef.current.stopAnimation()
       setIsPlaying(false)
       setCurrentTime(0)
+    }
+  }
+
+  const handlePause = () => {
+    if (sceneRef.current?.pauseAnimation) {
+      sceneRef.current.pauseAnimation()
+      setIsPlaying(false)
     }
   }
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <Canvas
-        camera={{ 
-          position: [20, 10, 20], 
-          fov: 60,
-          near: 0.1,
-          far: 1000 
-        }}
         gl={{ 
           antialias: true,
           alpha: true 
@@ -47,20 +49,13 @@ function App() {
           <ambientLight intensity={0.4} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
           
-          {/* 动画分析器 */}
-          <AnimationAnalyzer 
-            ref={analyzerRef}
+          {/* 完整动画场景 */}
+          <CompleteAnimationScene 
+            ref={sceneRef}
             onAnimationInfoChange={setAnimationInfo}
             onPlayingChange={setIsPlaying}
             onTimeChange={setCurrentTime}
-          />
-          
-          {/* 相机控制 */}
-          <OrbitControls 
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
-            target={[0, 5, 0]}
+            onCameraUpdate={setCameraState}
           />
           
           {/* 环境 */}
@@ -68,7 +63,7 @@ function App() {
         </Suspense>
       </Canvas>
       
-      {/* 简单的状态显示 */}
+      {/* 多源动画状态显示 */}
       <div style={{
         position: 'absolute',
         top: '20px',
@@ -81,17 +76,31 @@ function App() {
         border: '1px solid #00ff00'
       }}>
         <h3 style={{ margin: '0 0 10px 0', color: '#00ffff' }}>
-          🔍 V6 Animation Analyzer
+          🎬 Complete Animation Scene
         </h3>
-        <div>Status: Analyzing v6 model...</div>
-        <div>Mode: Debug Mode</div>
-        <div>Check console for detailed logs</div>
+        <div>Status: {isPlaying ? '▶️ Playing' : '⏸️ Paused'}</div>
+        <div>Time: {currentTime.toFixed(2)}s</div>
+        <div>Mode: Multi-Source Animation</div>
+        {animationInfo && (
+          <div style={{ marginTop: '10px', fontSize: '12px' }}>
+            <div>📹 Camera: {animationInfo.camera ? '✅' : '❌'}</div>
+            <div>🎯 Rings: {animationInfo.rings?.length || 0}/3</div>
+            <div>⏱️ Duration: {animationInfo.totalDuration?.toFixed(2)}s</div>
+          </div>
+        )}
+        {cameraState && (
+          <div style={{ marginTop: '10px', fontSize: '11px' }}>
+            <div>📍 Pos: [{cameraState.position?.map(p => p.toFixed(1)).join(', ')}]</div>
+            <div>🔍 FOV: {cameraState.fov?.toFixed(1)}°</div>
+          </div>
+        )}
       </div>
 
       {/* 动画控制器 */}
       <AnimationControls 
         onPlay={handlePlay}
         onStop={handleStop}
+        onPause={handlePause}
         isPlaying={isPlaying}
         currentTime={currentTime}
         animationInfo={animationInfo}
