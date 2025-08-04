@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useRef } from 'react'
+import React, { Suspense, useState, useRef, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
 import CompleteAnimationScene from './components/CompleteAnimationScene.jsx'
@@ -35,6 +35,7 @@ function App() {
       setIsPlaying(false)
     }
   }
+
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
@@ -76,16 +77,24 @@ function App() {
         border: '1px solid #00ff00'
       }}>
         <h3 style={{ margin: '0 0 10px 0', color: '#00ffff' }}>
-          🎬 Complete Animation Scene
+          🎬 Three-Phase Animation Scene
         </h3>
         <div>Status: {isPlaying ? '▶️ Playing' : '⏸️ Paused'}</div>
         <div>Time: {currentTime.toFixed(2)}s</div>
-        <div>Mode: Multi-Source Animation</div>
+        <div>Mode: Three-Phase Animation</div>
         {animationInfo && (
           <div style={{ marginTop: '10px', fontSize: '12px' }}>
+            <div>🎯 v6 Original: {animationInfo.v6Original ? '✅' : '❌'}</div>
             <div>📹 Camera: {animationInfo.camera ? '✅' : '❌'}</div>
-            <div>🎯 Rings: {animationInfo.rings?.length || 0}/3</div>
-            <div>⏱️ Duration: {animationInfo.totalDuration?.toFixed(2)}s</div>
+            <div>🎯 Scenes B Rings: {animationInfo.rings?.length || 0}/3</div>
+            <div>⏱️ Total Duration: {animationInfo.totalDuration?.toFixed(2)}s</div>
+            {animationInfo.phaseDurations && (
+              <div style={{ marginTop: '5px', fontSize: '11px' }}>
+                <div>Phase 1: {animationInfo.phaseDurations.phase1?.toFixed(1)}s</div>
+                <div>Phase 2: {animationInfo.phaseDurations.phase2?.toFixed(1)}s</div>
+                <div>Phase 3: {animationInfo.phaseDurations.phase3?.toFixed(1)}s</div>
+              </div>
+            )}
           </div>
         )}
         {cameraState && (
@@ -95,6 +104,7 @@ function App() {
           </div>
         )}
       </div>
+
 
       {/* 动画控制器 */}
       <AnimationControls 

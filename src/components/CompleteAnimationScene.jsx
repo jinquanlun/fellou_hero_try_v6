@@ -21,9 +21,45 @@ const CompleteAnimationScene = forwardRef(({
   const [currentTime, setCurrentTime] = useState(0)
   const [animationInfo, setAnimationInfo] = useState(null)
   const [cameraState, setCameraState] = useState(null)
+  const [phase1Time, setPhase1Time] = useState(0) // Phase 1独立的时间计数
 
-  // 加载v6模型用于显示静态环（可选）
-  const { nodes: v6Nodes, materials: v6Materials } = useGLTF('/LOST_cut2_v6-transformed.glb')
+  const [currentPhase, setCurrentPhase] = useState({ phase: 1, phaseTime: 0, progress: 0 })
+
+  // 加载v6模型用于显示静态环
+  const gltfResult = useGLTF('/LOST_cut2_v6-transformed.glb')
+  const { nodes: v6Nodes, materials: v6Materials } = gltfResult
+  
+  // 调试v6模型加载状态
+  useEffect(() => {
+    console.log('🔍 v6模型加载状态检查:')
+    console.log('   gltfResult:', gltfResult)
+    console.log('   v6Nodes存在:', !!v6Nodes)
+    console.log('   v6Materials存在:', !!v6Materials)
+    
+    if (v6Nodes && v6Materials) {
+      console.log('✅ v6模型加载成功:')
+      console.log('   Nodes数量:', Object.keys(v6Nodes).length)
+      console.log('   Nodes列表:', Object.keys(v6Nodes))
+      console.log('   Materials数量:', Object.keys(v6Materials).length) 
+      console.log('   Materials列表:', Object.keys(v6Materials))
+      console.log('   重要节点检查:')
+      console.log('   - 網格001:', !!v6Nodes.網格001)
+      console.log('   - 網格002:', !!v6Nodes.網格002) 
+      console.log('   - 網格003:', !!v6Nodes.網格003)
+      console.log('   - PaletteMaterial001:', !!v6Materials.PaletteMaterial001)
+      
+      // 检查所有网格节点
+      Object.keys(v6Nodes).forEach(nodeName => {
+        if (nodeName.includes('網格')) {
+          console.log(`   - ${nodeName}:`, !!v6Nodes[nodeName])
+        }
+      })
+    } else {
+      console.warn('⚠️ v6模型加载失败或还在加载中')
+      console.log('   文件路径: /LOST_cut2_v6-transformed.glb')
+      console.log('   请确认文件存在于: /Users/quan/cursor/fellou_try_v6/public/LOST_cut2_v6-transformed.glb')
+    }
+  }, [v6Nodes, v6Materials, gltfResult])
 
   // 初始化多源动画系统
   useEffect(() => {
@@ -36,6 +72,11 @@ const CompleteAnimationScene = forwardRef(({
         
         // 构建动画信息
         const info = {
+          v6Original: animationData.v6Original ? {
+            name: 'v6 Original Animation',
+            duration: animationData.v6Original.duration,
+            tracks: animationData.v6Original.metadata.tracks.length
+          } : null,
           camera: animationData.camera ? {
             name: 'Camera Animation',
             duration: animationData.camera.duration,
@@ -48,7 +89,8 @@ const CompleteAnimationScene = forwardRef(({
             tracks: data?.metadata.tracks.length || 0,
             hasAnimation: !!data
           })),
-          totalDuration: multiSourceAnimationExtractor.getDuration()
+          totalDuration: multiSourceAnimationExtractor.getDuration(),
+          phaseDurations: multiSourceAnimationExtractor.getPhaseDurations()
         }
 
         setAnimationInfo(info)
@@ -81,6 +123,7 @@ const CompleteAnimationScene = forwardRef(({
     stopAnimation: () => {
       setIsPlaying(false)
       setCurrentTime(0)
+      setPhase1Time(0) // 重置Phase 1时间
       if (onPlayingChange) onPlayingChange(false)
       if (onTimeChange) onTimeChange(0)
       console.log('⏹️ Stopped complete animation')
@@ -93,22 +136,40 @@ const CompleteAnimationScene = forwardRef(({
     seekTo: (time) => {
       setCurrentTime(time)
       if (onTimeChange) onTimeChange(time)
-    }
+    },
+    getCameraControlData: () => ({
+      currentPhase
+    })
   }))
 
   // 动画循环
   useFrame((state, deltaTime) => {
-    if (!isInitialized || !isPlaying) return
+    if (!isInitialized) return
 
-    // 更新动画时间
-    const newTime = currentTime + deltaTime
-    const totalDuration = multiSourceAnimationExtractor.getDuration()
-    
-    // 循环播放
-    const normalizedTime = totalDuration > 0 ? newTime % totalDuration : 0
-    
-    setCurrentTime(normalizedTime)
-    if (onTimeChange) onTimeChange(normalizedTime)
+    if (isPlaying) {
+      // 播放中：更新总体动画时间
+      const newTime = currentTime + deltaTime
+      const totalDuration = multiSourceAnimationExtractor.getDuration()
+      
+      // 循环播放
+      const normalizedTime = totalDuration > 0 ? newTime % totalDuration : 0
+      
+      setCurrentTime(normalizedTime)
+      if (onTimeChange) onTimeChange(normalizedTime)
+    } else {
+      // 未播放时：更新Phase 1的独立时间（让圆环转动）
+      const newPhase1Time = phase1Time + deltaTime
+      const v6Duration = multiSourceAnimationExtractor.animationData?.v6Original?.duration || 10
+      const normalizedPhase1Time = v6Duration > 0 ? newPhase1Time % v6Duration : 0
+      
+      setPhase1Time(normalizedPhase1Time)
+    }
+
+    // 更新当前阶段信息
+    if (multiSourceAnimationExtractor.isReady()) {
+      const phaseInfo = multiSourceAnimationExtractor.getCurrentPhase(currentTime)
+      setCurrentPhase(phaseInfo)
+    }
   })
 
   // 处理相机更新
@@ -116,6 +177,7 @@ const CompleteAnimationScene = forwardRef(({
     setCameraState(cameraData)
     if (onCameraUpdate) onCameraUpdate(cameraData)
   }
+
 
   return (
     <group ref={sceneRef}>
@@ -132,9 +194,11 @@ const CompleteAnimationScene = forwardRef(({
         animationExtractor={multiSourceAnimationExtractor}
         isPlaying={isPlaying}
         currentTime={currentTime}
+        phase1Time={phase1Time}
         v6Nodes={v6Nodes}
         v6Materials={v6Materials}
       />
+
 
       {/* 素白艺术体 */}
       {v6Nodes['素白艺术™_-_subycnvip'] && v6Materials.PaletteMaterial002 && (
@@ -156,37 +220,53 @@ const CompleteAnimationScene = forwardRef(({
 /**
  * 动画环组件 - 使用v6模型几何体 + Scenes B动画数据
  */
-function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6Materials }) {
+function AnimatedRings({ animationExtractor, isPlaying, currentTime, phase1Time, v6Nodes, v6Materials }) {
   const ring1Ref = useRef()
   const ring2Ref = useRef()
   const ring3Ref = useRef()
 
   useFrame(() => {
-    if (!animationExtractor?.isReady() || !isPlaying) return
+    if (!animationExtractor?.isReady()) return
+    
+    // 决定使用哪个时间：播放中用currentTime，Phase 1静态时用phase1Time
+    const phaseInfo = animationExtractor.getCurrentPhase(currentTime)
+    const shouldAnimate = isPlaying || phaseInfo.phase === 1
+    
+    
+    if (!shouldAnimate) return
 
     try {
-      // 获取所有环的变换数据
-      const transforms = animationExtractor.getAllTransformsAtTime(currentTime)
+      // Phase 1且未播放时，使用phase1Time来播放v6原始动画
+      const timeToUse = (!isPlaying && phaseInfo.phase === 1) ? phase1Time : currentTime
       
-      // 计算动画结尾调整（最后1.5秒开始调整，与相机同步）
-      const totalDuration = animationExtractor.getDuration()
-      const adjustDuration = 1.5 // 与相机调整时间同步
-      const endAdjustStartTime = totalDuration - adjustDuration
-      const isInEndAdjustment = currentTime >= endAdjustStartTime
+      // 获取所有环的变换数据（包含阶段信息）
+      const transforms = animationExtractor.getAllTransformsAtTime(timeToUse)
+      const currentPhase = transforms.phase
       
-      // 平滑调整因子 (0 到 1)
-      const adjustFactor = isInEndAdjustment 
-        ? Math.min(1, (currentTime - endAdjustStartTime) / adjustDuration)
-        : 0
+      // 只在Phase 3中进行结尾调整
+      let isInEndAdjustment = false
+      let smoothFactor = 0
       
-      // 使用与相机相同的高级缓动函数
-      const easeInOutCubic = (t) => {
-        return t < 0.5 
-          ? 4 * t * t * t 
-          : 1 - Math.pow(-2 * t + 2, 3) / 2
+      if (currentPhase.phase === 3) {
+        const totalDuration = animationExtractor.getDuration()
+        const adjustDuration = 1.5 // 与相机调整时间同步
+        const endAdjustStartTime = totalDuration - adjustDuration
+        isInEndAdjustment = currentTime >= endAdjustStartTime
+        
+        // 平滑调整因子 (0 到 1)
+        const adjustFactor = isInEndAdjustment 
+          ? Math.min(1, (currentTime - endAdjustStartTime) / adjustDuration)
+          : 0
+        
+        // 使用与相机相同的高级缓动函数
+        const easeInOutCubic = (t) => {
+          return t < 0.5 
+            ? 4 * t * t * t 
+            : 1 - Math.pow(-2 * t + 2, 3) / 2
+        }
+        
+        smoothFactor = easeInOutCubic(adjustFactor)
       }
-      
-      const smoothFactor = easeInOutCubic(adjustFactor)
       
 
       // 更新Ring 1 - Scenes_B_00100
@@ -205,12 +285,8 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
           }
         }
         if (t.scale) {
-          // 结尾调整：显著放大
-          const scaleMultiplier = 1 + smoothFactor * 0.5 // 增加50%（大幅增强）
-          
-          if (isInEndAdjustment) {
-            console.log(`Ring1 缩放: 原始scale=${t.scale.x.toFixed(3)}, 倍数=${scaleMultiplier.toFixed(2)}`)
-          }
+          // 只在Phase 3的结尾调整中放大
+          const scaleMultiplier = (currentPhase.phase === 3 && isInEndAdjustment) ? 1 + smoothFactor * 0.5 : 1
           
           ring1Ref.current.scale.set(
             t.scale.x * scaleMultiplier, 
@@ -236,8 +312,8 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
           }
         }
         if (t.scale) {
-          // 结尾调整：显著放大
-          const scaleMultiplier = 1 + smoothFactor * 0.5 // 增加50%（大幅增强）
+          // 只在Phase 3的结尾调整中放大
+          const scaleMultiplier = (currentPhase.phase === 3 && isInEndAdjustment) ? 1 + smoothFactor * 0.5 : 1
           
           ring2Ref.current.scale.set(
             t.scale.x * scaleMultiplier, 
@@ -263,8 +339,8 @@ function AnimatedRings({ animationExtractor, isPlaying, currentTime, v6Nodes, v6
           }
         }
         if (t.scale) {
-          // 结尾调整：显著放大
-          const scaleMultiplier = 1 + smoothFactor * 0.5 // 增加50%（大幅增强）
+          // 只在Phase 3的结尾调整中放大
+          const scaleMultiplier = (currentPhase.phase === 3 && isInEndAdjustment) ? 1 + smoothFactor * 0.5 : 1
           
           ring3Ref.current.scale.set(
             t.scale.x * scaleMultiplier, 
